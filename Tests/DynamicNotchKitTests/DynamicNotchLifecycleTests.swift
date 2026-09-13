@@ -80,6 +80,52 @@ struct DynamicNotchLifecycleTests {
         #expect(released)
     }
 
+    @Test("Screen changes update windows during state transitions", arguments: [false, true])
+    func updatesTransitioningNotch(expanding: Bool) async throws {
+        let notch = Notch(
+            hoverBehavior: [], style: .notch,
+            expanded: { EmptyView() },
+            compactLeading: { EmptyView() },
+            compactTrailing: { EmptyView() },
+            compactBottom: { EmptyView() }
+        )
+        defer { notch.windowController?.close() }
+        if expanding {
+            await notch.compact()
+        } else {
+            await notch.expand()
+        }
+        let originalWindow = try #require(notch.windowController?.window)
+
+        let transition = Task {
+            if expanding {
+                await notch.expand()
+            } else {
+                await notch.compact()
+            }
+        }
+        defer { transition.cancel() }
+        let isTransitioning = try await waitUntil { notch.state == .hidden }
+        try #require(isTransitioning)
+
+        NotificationCenter.default.post(
+            name: NSApplication.didChangeScreenParametersNotification,
+            object: NSApplication.shared
+        )
+
+        let updated = try await waitUntil {
+            notch.windowController?.window !== originalWindow
+        }
+        #expect(updated)
+        await transition.value
+        let completed = try await waitUntil {
+            notch.state == (expanding ? .expanded : .compact)
+        }
+        #expect(completed)
+        #expect(notch.windowController?.window?.isVisible == true)
+        await notch.hide()
+    }
+
     private func makeNotch() -> Notch {
         Notch(hoverBehavior: [], style: .auto) { EmptyView() }
     }

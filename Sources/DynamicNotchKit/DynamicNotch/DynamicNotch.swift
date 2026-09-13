@@ -164,7 +164,8 @@ public final class DynamicNotch<Expanded, CompactLeading, CompactTrailing, Compa
             for await _ in sequence {
                 guard !Task.isCancelled else { return }
                 guard let self else { return }
-                guard self.state != .hidden else { continue }
+                // Transitions can be hidden while their window still needs display updates.
+                guard self.windowController != nil else { continue }
                 if let screen = NSScreen.screens.first {
                     self.initializeWindow(screen: screen)
                 }
