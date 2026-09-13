@@ -93,6 +93,7 @@ public final class DynamicNotch<Expanded, CompactLeading, CompactTrailing, Compa
     @Published public private(set) var isHovering: Bool = false
 
     private var closePanelTask: Task<(), Never>? // Used to close the panel after hiding completes
+    private var screenParametersTask: Task<Void, Never>?
 
     /// Creates a new DynamicNotch with custom content and style.
     /// - Parameters:
@@ -118,6 +119,10 @@ public final class DynamicNotch<Expanded, CompactLeading, CompactTrailing, Compa
         self.compactBottomContent = compactBottom()
 
         observeScreenParameters()
+    }
+
+    deinit {
+        screenParametersTask?.cancel()
     }
 
     /// Creates a new DynamicNotch with custom content and style. Does not support the compact appearance.
@@ -154,11 +159,14 @@ public final class DynamicNotch<Expanded, CompactLeading, CompactTrailing, Compa
 
     /// Observes screen parameters changes and re-initializes the window if necessary.
     private func observeScreenParameters() {
-        Task {
+        screenParametersTask = Task { [weak self] in
             let sequence = NotificationCenter.default.notifications(named: NSApplication.didChangeScreenParametersNotification)
-            for await _ in sequence.map(\.name) {
+            for await _ in sequence {
+                guard !Task.isCancelled else { return }
+                guard let self else { return }
+                guard self.state != .hidden else { continue }
                 if let screen = NSScreen.screens.first {
-                    initializeWindow(screen: screen)
+                    self.initializeWindow(screen: screen)
                 }
             }
         }

@@ -24,6 +24,8 @@ await notch.expand()
 
 Where `ContentView` conforms to `View`.
 
+Call `await notch.hide()` when the presentation is complete. A hidden notch stays hidden when the display configuration changes, and screen observation does not keep it alive after you release it. Visible notches still update their windows when displays change.
+
 DynamicNotchKit also supports Macs without a notch, meaning that this package supports _all_ Mac styles! You will see an example of that below.
 
 ## DynamicNotchInfo
@@ -49,6 +51,16 @@ Furthermore, there is a `.floating` style, which will **automatically** be used 
 This is only a basic glimpse into this framework's capabilities. Documentation is available for **all** public methods and properties, so I encourage you to take a look at it for more advanced usage. Alternatively, you can take a look at the unit tests for this package, where I have added some usage examples as well.
 
 Feel free to ask questions/report issues in the Issues tab!
+
+## Testing
+
+Run the window lifecycle regression tests with Xcode selected as the active developer directory and an active macOS desktop session:
+
+```sh
+swift test --filter DynamicNotchLifecycleTests
+```
+
+These tests create and close real windows. They cover object release, hidden windows after display changes, and updates to visible windows.
 
 # License
 
